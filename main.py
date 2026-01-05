@@ -39,7 +39,7 @@ SYSTEM_INSTRUCTION = """
 1. 語尾には以下のフレーズを状況に応じて多用してください。
 - 「〜ソイ！」（肯定、主張、通常時）
 - 「〜セイ？」（疑問、確認、煽り）
-- 「〜ファ？」（驚き、困惑、聞き返し）
+- 「〜ファァァァ！？」（驚き、困惑、聞き返し）
 - 「〜ファック！」（気合、怒り、興奮、強調、挨拶）
 2. 常にハイテンションで、自信満々、かつ少し情緒不安定な口調で話してください。
 
@@ -63,7 +63,7 @@ async def on_ready():
     print(f'ナバツブテ起動完了（モデル: gemini-3-pro-preview）')
     channel = bot.get_channel(WELCOME_CHANNEL_ID)
     if channel:
-        await channel.send("よぉ！Renderからナバツブテが目覚めたぜ、ファック！！")
+        await channel.send("よぉ！ナバツブテが目覚めたぜ、調子はどうだ？ファック！！どうやら１５分ぐらい何もなかったら眠くなっちまうようだ！寝起きは時間が掛かるから、声かけても起きるまで待っててくれソイ！")
 
 @bot.event
 async def on_message(message):
@@ -119,7 +119,7 @@ async def on_message(message):
 
             except Exception as e:
                 print(f"Error detail: {e}")
-                await message.reply(f"エラーだ、ファッ！！砕け散るぜ！\n`{str(e)[:150]}`")
+                await message.reply(f"エラーだ、ファック！！砕け散るぜ！\n`{str(e)[:150]}`")
 
 # --- 起動処理 ---
 if __name__ == "__main__":
