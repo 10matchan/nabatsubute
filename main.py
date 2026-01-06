@@ -121,23 +121,29 @@ async def on_message(message):
                 print(f"Error detail: {e}")
                 await message.reply(f"エラーだ、ファック！！砕け散るぜ！ビャアアア！？\n`{str(e)[:150]}`")
 
+# --- 修正後の実行ブロック ---
 if __name__ == "__main__":
-    threading.Thread(target=run_web_server, daemon=True).start()
-    
-    time.sleep(5)
-    
-    while True:
-        try:
-            if DISCORD_TOKEN:
-                print("ナバツブテ、降臨を試みるぜ、ファック！！")
-                bot.run(DISCORD_TOKEN)
-            else:
-                print("トークンがねえぞ、ソイ！！")
-                break
-        except Exception as e:
-            print(f"接続が切れたな、ファ！？ 5秒後に再起動してやるぜ: {e}")
-            time.sleep(5)
+    if not DISCORD_TOKEN:
+        print("トークンがねえぞ、ソイ！！")
+    else:
+        # 1. Discord Botをバックグラウンド（サブスレッド）で起動
+        def start_bot():
+            while True:
+                try:
+                    print("ナバツブテ、降臨を試みるぜ、ファック！！")
+                    bot.run(DISCORD_TOKEN)
+                except Exception as e:
+                    print(f"接続が切れたな、ファ！？ 10秒後に再起動してやるぜ: {e}")
+                    time.sleep(10)
 
+        bot_thread = threading.Thread(target=start_bot, daemon=True)
+        bot_thread.start()
+
+        # 2. Flask（Webサーバー）をメインスレッドで起動
+        # これによりRenderは「常にポート10000でWebサーバーが動いている」と認識し続ける
+        port = int(os.environ.get("PORT", 10000))
+        print(f"Webサーバー起動中（Port: {port}）、セイ？")
+        app.run(host="0.0.0.0", port=port)
 
 
 
