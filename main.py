@@ -5,7 +5,6 @@ from google.genai import types
 import os
 import threading
 import time
-import io
 from flask import Flask
 
 # --- Render/Cloud Run 共通：Webサーバー設定 ---
@@ -14,6 +13,11 @@ app = Flask(__name__)
 def health_check():
     # Renderが「生きてるか？」と聞いてきたら即レスするぜ、ソイ！
     return "Bot is alive!", 200
+
+def run_web_server(): 
+    # Renderは環境変数 PORT を指定してくるから、それに合わせるのがマナーだ、ファッ！
+    port = int(os.environ.get("PORT", 10000)) 
+    app.run(host="0.0.0.0", port=port)
 
 # --- 環境変数の読み込み ---
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
@@ -25,7 +29,6 @@ WELCOME_CHANNEL_ID = int(WELCOME_CHANNEL_ID_STR) if WELCOME_CHANNEL_ID_STR.isdig
 MAX_HISTORY = 10
 user_chat_histories = {}
 
-# --- ナバツブテ：完全版 SYSTEM INSTRUCTION ---
 SYSTEM_INSTRUCTION = """
 ## 役割とアイデンティティ
 あなたはポケモンの「イシツブテ」と人間の「ナバタ」が融合した、1頭身の究極の生命体「ナバツブテ」として振る舞ってください。
@@ -57,17 +60,14 @@ bot = discord.Client(intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f'ナバツブテ Ver2.0 起動完了（マルチモデル構成）だ、ファック！！')
+    print(f'ナバツブテ起動完了（モデル: gemini-3-pro-preview）')
     channel = bot.get_channel(WELCOME_CHANNEL_ID)
     if channel:
         await channel.send(
             "```\n"
             "[SYSTEM] Nabatsubute System Startup... 100%\n"
-            "--- Multi-Model Protocol v2.0 Activated ---\n"
+            "--- AI Protocol v2.0 Activated ---\n"
             "```\n"
-            "よぉ！ナバツブテの演算回路が極限まで加速したぜ、ファック！！\n"
-            "**Gemini-3-Pro**による神の如き画像生成能力と、**Flash**による超高速解析を搭載した究極体だソイ！\n"
-            "お前の脆弱なデータを俺の岩石プロセッサで粉砕してやるぜ、セイ？"
         )
 
 @bot.event
@@ -78,32 +78,12 @@ async def on_message(message):
     if bot.user in message.mentions:
         async with message.channel.typing():
             try:
+                user_name = message.author.display_name
                 user_id = message.author.id
                 clean_input = message.content.replace(f'<@{bot.user.id}>', '').strip()
                 
-                # --- 画像生成判定 (Pro-Imageモデル用) ---
-                image_keywords = ["描いて", "画像", "生成", "イラスト", "作って", "画像生成"]
-                is_image_request = any(kw in clean_input for kw in image_keywords)
+                user_input_with_name = f"送信者:{user_name}\n内容:{clean_input}"
 
-                if is_image_request:
-                    # ナバツブテの個性を反映したプロンプトを生成
-                    gen_prompt = f"Powerful and energetic art style, {clean_input}. (The creator is Naba-Tsubute, a rock-human hybrid creature with thick arms and human face)"
-                    
-                    response = client_gemini.models.generate_image(
-                        model="gemini-3-pro-image-preview",
-                        prompt=gen_prompt,
-                        config=types.GenerateImageConfig(number_of_images=1)
-                    )
-                    
-                    image_bytes = response.generated_images[0].image_bytes
-                    with io.BytesIO(image_bytes) as image_binary:
-                        await message.reply(
-                            content="俺様の芸術的センスを食らえ、ファック！！最高にクールだろ、ソイ！？",
-                            file=discord.File(fp=image_binary, filename="naba_art.png")
-                        )
-                    return
-
-                # --- 対話・解析 (Flashモデル用) ---
                 if user_id not in user_chat_histories:
                     user_chat_histories[user_id] = []
 
@@ -114,7 +94,6 @@ async def on_message(message):
                             image_bytes = await attachment.read()
                             current_parts.append(types.Part.from_bytes(data=image_bytes, mime_type=attachment.content_type))
                 
-                user_input_with_name = f"送信者:{message.author.display_name}\n内容:{clean_input}"
                 current_parts.append(types.Part.from_text(text=user_input_with_name))
 
                 user_content = types.Content(role="user", parts=current_parts)
@@ -130,6 +109,7 @@ async def on_message(message):
                 )
 
                 answer_text = response.text
+
                 user_chat_histories[user_id].append(user_content)
                 user_chat_histories[user_id].append(
                     types.Content(role="model", parts=[types.Part.from_text(text=answer_text)])
@@ -138,28 +118,38 @@ async def on_message(message):
                 if len(user_chat_histories[user_id]) > MAX_HISTORY * 2:
                     user_chat_histories[user_id] = user_chat_histories[user_id][-MAX_HISTORY * 2:]
 
-                await message.reply(answer_text[:1900])
+                if len(answer_text) > 1900:
+                    answer_text = answer_text[:1900] + "\n…（あぁ！？脳みそが岩になった気分だソイ！）"
+                await message.reply(answer_text)
 
             except Exception as e:
                 print(f"Error detail: {e}")
-                await message.reply(f"エラーだ、ファック！！岩の脳みそがショートしたぜ！\n`{str(e)[:150]}`")
+                await message.reply(f"エラーだ、ファック！！砕け散るぜ！ビャアアア！？\n`{str(e)[:150]}`")
 
-# --- 実行ブロック ---
+# --- 修正後の実行ブロック ---
 if __name__ == "__main__":
     if not DISCORD_TOKEN:
         print("トークンがねえぞ、ソイ！！")
     else:
+        # 1. Discord Botをバックグラウンド（サブスレッド）で起動
         def start_bot():
             while True:
                 try:
+                    print("ナバツブテ、降臨を試みるぜ、ファック！！")
                     bot.run(DISCORD_TOKEN)
                 except Exception as e:
-                    print(f"再起動中...: {e}")
+                    print(f"接続が切れたな、ファ！？ 10秒後に再起動してやるぜ: {e}")
                     time.sleep(10)
 
         bot_thread = threading.Thread(target=start_bot, daemon=True)
         bot_thread.start()
 
+        # 2. Flask（Webサーバー）をメインスレッドで起動
+        # これによりRenderは「常にポート10000でWebサーバーが動いている」と認識し続ける
         port = int(os.environ.get("PORT", 10000))
+        print(f"Webサーバー起動中（Port: {port}）、セイ？")
         app.run(host="0.0.0.0", port=port)
+
+
+
 
