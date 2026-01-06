@@ -123,16 +123,22 @@ async def on_message(message):
 
 # --- 起動処理 ---
 if __name__ == "__main__":
-    # 1. まずFlaskを先に裏側で動かす！
-    # これを先にやらないと、Renderが「返事がないぜ！」とキレて停止させるんだ、ソイ！
+    # 1. Flask（Webサーバー）を別スレッドで起動
+    # ポートはRender指定の10000番を優先だ、ソイ！
     threading.Thread(target=run_web_server, daemon=True).start()
     
-    # 2. サーバーが立ち上がるまで少し待機（筋肉のストレッチだ）
-    time.sleep(2)
+    # 2. 少し待機して筋肉を整える
+    time.sleep(5)
     
-    # 3. Discord Bot 起動
-    if DISCORD_TOKEN:
-        print("ナバツブテ、降臨するぜ、ファック！！")
-        bot.run(DISCORD_TOKEN)
-    else:
-        print("DISCORD_TOKEN が設定されてねえぞ、あんた、ソイ！！")
+    # 3. Discord Bot を無限ループで再試行起動だ、ファッ！！
+    while True:
+        try:
+            if DISCORD_TOKEN:
+                print("ナバツブテ、降臨を試みるぜ、ファック！！")
+                bot.run(DISCORD_TOKEN)
+            else:
+                print("TOKENがねえぞ、ソイ！！")
+                break
+        except Exception as e:
+            print(f"接続が切れたな、ファ！？ 5秒後に再起動してやるぜ: {e}")
+            time.sleep(5) # 5秒待ってから再挑戦だ、セイ？
