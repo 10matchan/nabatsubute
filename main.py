@@ -90,7 +90,7 @@ async def on_message(message):
                     gen_prompt = f"Powerful and energetic art style, {clean_input}. (The creator is Naba-Tsubute, a rock-human hybrid creature with thick arms and human face)"
                     
                     response = client_gemini.models.generate_image(
-                        model="gemini-3-pro-preview",
+                        model="gemini-3-pro-image-preview",
                         prompt=gen_prompt,
                         config=types.GenerateImageConfig(number_of_images=1)
                     )
@@ -162,3 +162,4 @@ if __name__ == "__main__":
 
         port = int(os.environ.get("PORT", 10000))
         app.run(host="0.0.0.0", port=port)
+
