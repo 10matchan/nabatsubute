@@ -95,7 +95,7 @@ async def on_message(message):
                 full_contents = user_chat_histories[user_id] + [user_content]
 
                 response = client_gemini.models.generate_content(
-                    model="gemini-3-flash-preview"
+                    model="gemini-3-flash-preview",
                     contents=full_contents,
                     config=types.GenerateContentConfig(
                         system_instruction=SYSTEM_INSTRUCTION,
@@ -144,6 +144,7 @@ if __name__ == "__main__":
         port = int(os.environ.get("PORT", 10000))
         print(f"Webサーバー起動中（Port: {port}）、セイ？")
         app.run(host="0.0.0.0", port=port)
+
 
 
 
